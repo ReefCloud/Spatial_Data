@@ -45,11 +45,10 @@ makeTiers<-function(territoryName){
   
   ##Define some anciliary info
   countryISO=country$ISO
-  admin_level=ifelse(countryISO%in% c("Hawaii"), 
-                     6,
-                     ifelse(countryISO%in% c("American Samoa", "WSM"),
-                            8, 4)
-  )
+  admin_level=dplyr::case_when(territoryName %in% c("Hawaii", "Bermuda") ~ 6,
+                               territoryName %in% c("Jamaica","Grenada","Curaçao","Bonaire","Aruba","Anguilla", "Saint Vincent", "Turks and Caicos") ~ 2,
+                               territoryName %in% c("American Samoa", "WSM") ~ 8,
+                               .default=4)
   
   
   ## Tier 2: LME or Country #### 
@@ -84,11 +83,13 @@ makeTiers<-function(territoryName){
   
   ###Generate Reef Polygons (tier 5)
   # ReefTier(tier2.file = sprintf("ReefCloud_regions/tier2/%s_tier2.geojson", countryISO))
-  if (file.exists(file.path(d.folder,sprintf("ReefCloud_regions/tier5/%s_tier5.geojson", countryISO)))){
-    tier5<-st_read(sprintf("ReefCloud_regions/tier5/%s_tier5.geojson", countryISO))
+  if (file.exists(file.path(d.folder,sprintf("ReefCloud_regions/tiers_databse/%s_tier5.geojson", countryISO)))){
+    tier5<-st_read(file.path(d.folder,sprintf("ReefCloud_regions/tiers_databse/%s_tier5.geojson", countryISO)))
+    t5.exist=T
   } else {
     tier5<-ReefTier(tier2, 
                     d.folder = d.folder)
+    t5.exist=F
   }
   # tier5<-tier5%>%
   #   st_intersection(., y=tier2)
@@ -122,7 +123,6 @@ makeTiers<-function(territoryName){
     
     #admin_level ##Often admin_level=4 work for small nations. Change this For large countries (e.g., countries) to admin level=1 or 2as appropiate
     tier4=AdminBoundaries(tier2,admin_level =admin_level)  
-    
     valid=st_is_valid(tier4)
     tier4=tier4 %>%st_set_precision(1000000) %>% st_make_valid()
     tier4=st_buffer(tier4[!is.na(valid),], 0.0)
@@ -146,24 +146,9 @@ makeTiers<-function(territoryName){
   }
   
   
+  #add tier IDs and save files
+  dir.create(file.path(d.folder,"ReefCloud_regions/tiers_databse/", showWarnings = F))
   
-  
-  
-  ##Check if there are reefs outside tier4
-  # if (countryISO!="AUS"){
-  #   mr<-tier5[(sapply(st_intersects(tier5, tier4),function(x){length(x)==0})==TRUE),]%>%
-  #     st_union()%>%
-  #     st_sf()%>%
-  #     st_buffer(dist=0.05)
-  #   if (dim(mr)[1]!=0){
-  #     tier4[which.min(st_distance(mr,tier4)),]<-tier4[which.min(st_distance(mr,tier4)),]%>%
-  #       st_union(mr)%>%
-  #       st_sf()
-  #   }
-  # }
-  # 
-  
-  #add tier IDs
   tier3<-tier3 %>%
     rename(source_id=tier_id)%>%
     st_join(tier2 %>% dplyr::select(tier_id, ISO, territory, sovereign, geometry))%>%
@@ -179,14 +164,19 @@ makeTiers<-function(territoryName){
     tibble::rowid_to_column(., "ID")%>%
     mutate(tier_id=as.numeric(paste0(tier_id,ID)))%>%
     dplyr::select(-ID)
-  tier5<-tier5 %>%
-    ungroup%>%
-    # rename(source_id=tier_id)%>%
-    st_join(tier4 %>% dplyr::select(tier_id,ISO, territory, sovereign, geometry))%>%
-    tibble::rowid_to_column(., "ID")%>%
-    mutate(tier_id=as.numeric(paste0(tier_id,ID)))%>%
-    dplyr::select(-ID)%>%
-    st_cast(to = "MULTIPOLYGON")
+  
+  if (t5.exist==F){
+    tier5<-tier5 %>%
+      ungroup%>%
+      # rename(source_id=tier_id)%>%
+      st_join(tier4 %>% dplyr::select(tier_id,ISO, territory, sovereign, geometry))%>%
+      tibble::rowid_to_column(., "ID")%>%
+      mutate(tier_id=as.numeric(paste0(tier_id,ID)))%>%
+      dplyr::select(-ID)%>%
+      st_cast(to = "MULTIPOLYGON")
+    st_write(tier5, file.path(d.folder,sprintf("ReefCloud_regions/tiers_databse/%s_tier5.geojson", countryISO)), 
+             delete_dsn=T,quiet = T,append = F)
+  }
   
   ##Join tiers
   t24=tier2%>%
@@ -195,18 +185,14 @@ makeTiers<-function(territoryName){
     st_cast(to = "MULTIPOLYGON")
   
   #Write File
-  dir.create(file.path(d.folder,"ReefCloud_regions/tiers_databse/", showWarnings = F))
   st_write(t24, file.path(d.folder,sprintf("ReefCloud_regions/tiers_databse/%s_tier2_4.geojson", countryISO)), 
-           delete_dsn=T,quiet = T,append = F)
-  st_write(tier5, file.path(d.folder,sprintf("ReefCloud_regions/tiers_databse/%s_tier5.geojson", countryISO)), 
            delete_dsn=T,quiet = T,append = F)
   
 }
 
 ## RUN ###
 
-for (territoryName in c("Honduras", "Belize","Colombia","Mexico", "Venezuela", "Bermuda",
-                        "Bahamas","Cuba", "Anguila","Guadelouoe", "Saint Vincent",
-                        "Curacao", "Bonaire", "Aruba", "Grenada", "Trinidad and Tobago")){
+for (territoryName in c( "Cuba")){
   tryCatch(makeTiers(territoryName = territoryName))
+  gc()
 }
