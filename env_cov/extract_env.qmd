@@ -1,0 +1,127 @@
+---
+title: "Cyclone_query"
+author: "Manuel Gonzalez-Rivero"
+format: html
+editor: visual
+---
+
+## Extracting environmental co-variates from ReefCloud's GeoServer
+
+Intro
+
+## Connect to Server
+
+```{r setup, include=T}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+
+library(sf) # simple features packages for handling vector GIS data
+library(httr) # generic webservice package
+library(tidyverse) # a suite of packages for data wrangling, transformation, plotting, ...
+library(ows4R) # interface for OGC webservices
+library(rnaturalearth) #World Map data from Natural Earth
+library(leaflet)
+
+#URL for the ReefCloud GeoServer
+rc_geo<-"https://geoserver.apps.aims.gov.au/reefcloud/ows"
+rc_client <- WFSClient$new(rc_geo, 
+                           serviceVersion = "1.0.0")
+#List of features
+rc_client$getFeatureTypes(pretty = TRUE)
+
+```
+
+Another to access this information is
+
+```{r}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+rc_client$getFeatureTypes() %>%
+  map_chr(function(x){x$getName()})
+
+```
+
+# Get data
+
+```{r}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+
+url <- parse_url(rc_geo)
+# create a bounding box for a spatial query.
+#I used http://bboxfinder.com/ as an easy way to produce the coordinates 
+my.bbox<-"134.217224,7.119971,134.612732,7.373362"
+url$query <- list(service = "WFS",
+                  version = "1.0.0", # optional
+                  request = "GetFeature",
+                  typename = "reefcloud:storm4m_exposure_year_tier",
+                  bbox = my.bbox,
+                  width=768,
+                  height=330,
+                  srs="EPSG%3A4326",
+                  styles='',
+                  format="application/openlayers")
+request <- build_url(url)
+
+koror<- read_sf(request)
+
+#Plot results
+
+df<-koror%>%dplyr::filter(start_year==2014)
+pal <- colorNumeric(
+  palette = "YlGnBu",
+  domain = df$max_hrs
+)
+
+leaflet(df)%>%addPolygons(color = "#444444", 
+                          stroke=F,
+                      weight = 1, 
+                      smoothFactor = 0.5,
+                      opacity = 1.0, 
+                      fillOpacity = 0.5,
+                      fillColor = ~pal(df$max_hrs),
+                      highlightOptions = highlightOptions(color = "white", weight = 2,bringToFront = TRUE))%>%
+  addTiles()%>%
+  addLegend("bottomright", pal = pal, values = ~df$max_hrs,
+    title = "Exposure to\n damaging waves (hrs)",
+    labFormat = labelFormat(prefix = "$"),
+    opacity = 1
+  )
+```
+
+# Spatial query from monitoring sites
+
+```{r}
+sites<- data.frame(x=c(134.35, 134.43), y=c(7.42,7.28))%>%
+  as.matrix() %>%
+  st_multipoint() %>% 
+  st_sfc(crs=4326) %>% 
+  st_cast('POINT') %>%
+  st_sf(name=c("Site1", "Site2"))
+
+my.bbox<-st_bbox(sites)%>%
+  as.character()%>%
+  paste(.,collapse = ',')
+
+url$query <- list(service = "WFS",
+                  version = "1.0.0", # optional
+                  request = "GetFeature",
+                  typename = "reefcloud:storm4m_exposure_year_tier",
+                  bbox = my.bbox,
+                  width=768,
+                  height=330,
+                  srs="EPSG%3A4326",
+                  styles='',
+                  format="application/openlayers")
+request <- build_url(url)
+
+koror<- read_sf(request)%>%
+  st_set_crs(4326)
+
+data = st_intersection(sites, koror)%>%st_drop_geometry()%>%
+  dplyr::select(name, start_year, max_hrs,min_hrs,start_date, end_date, storm_count,severity)%>%
+  group_by(name, start_year)%>%
+  summarise(max_hrs=mean(max_hrs), min_hrs=mean(min_hrs))%>%
+  arrange(name,start_year)
+  
+knitr::kable(data,format="html",
+             caption="Table 1. Estimated cyclone impact on monitring sites")
+
+```

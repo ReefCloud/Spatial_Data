@@ -182,7 +182,8 @@ makeTiers<-function(territoryName){
   t24=tier2%>%
     mutate(source_id=tier_id)%>%
     bind_rows(tier3, tier4)%>%
-    st_cast(to = "MULTIPOLYGON")
+    st_cast(to = "MULTIPOLYGON")%>%
+    st_wrap_x()
   
   #Write File
   st_write(t24, file.path(d.folder,sprintf("ReefCloud_regions/tiers_databse/%s_tier2_4.geojson", countryISO)), 
@@ -192,7 +193,7 @@ makeTiers<-function(territoryName){
 
 ## RUN ###
 
-for (territoryName in c( "Cuba")){
+for (territoryName in c( "Cuba", "Bahamas", "Egypt", "Saudi Arabia", "Yemen", "Sundan", "India")){
   tryCatch(makeTiers(territoryName = territoryName))
   gc()
 }
