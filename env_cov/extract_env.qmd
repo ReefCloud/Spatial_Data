@@ -1,25 +1,30 @@
 ---
-title: "Extracting environmental data from ReefCloud's GeoServer"
-title-block-banner: true
-author: "Manuel Gonzalez-Rivero"
-date: 2023-12-08
+title: "Environmental data in ReefCloud"
+title-block-banner: "#d42555"
+author:
+  - name: "Manuel Gonzalez-Rivero"
+    affiliations:
+      - "Australian Insitute of Marine Science"
+date: last-modified
 date-format: short
-affiliation-title: "Australian Insitute of Marine Science"
 format: 
   html:
     toc: true
-    toc-depth: 2
+    toc-depth: 3
     toc-title: Contents
     code-fold: true
+    smooth-scroll: true
+    code-block-bg: true
+    code-block-border-left: "#31BAE9"
+    highlight-style: github
 editor: visual
 execute:
   warning: false
+css: styles.css
 bibliography: references.bib
 ---
 
 # Introduction
-
-## *Environmental data in ReefCloud*
 
 ReefCloud offers access to environmental data layers used for statistical data integration in our [Public Dashboard](https://reefcloud.ai/dashboard/?x=143.64606&y=-16.83296&z=5.25959&level=2&id=1698). The statistical integration models the spatial and temporal series of coral and macroalgae cover across geographies. This allows the creation of summaries on the status and trends of coral reefs at management scales from individual monitoring observations. The figure below shows the outputs from the statistical integration of monitoring data from various institutions across more than 400 sites monitored between 2004 and 2022 (click on the figure to visualise the data in the ReefCloud dashboard).
 
