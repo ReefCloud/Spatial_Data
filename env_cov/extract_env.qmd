@@ -1,47 +1,142 @@
 ---
-title: "Cyclone_query"
+title: "Extracting environmental data from ReefCloud's GeoServer"
+title-block-banner: true
 author: "Manuel Gonzalez-Rivero"
-format: html
+date: 2023-12-08
+date-format: short
+affiliation-title: "Australian Insitute of Marine Science"
+format: 
+  html:
+    toc: true
+    toc-depth: 2
+    toc-title: Contents
+    code-fold: true
 editor: visual
+execute:
+  warning: false
 bibliography: references.bib
 ---
 
-## Extracting environmental co-variates from ReefCloud's GeoServer
+# Introduction
 
-ReefCloud offers access to environmental data layers used for the statistical integration of data in our [Public Dashboard](https://reefcloud.ai/dashboard/?x=143.64606&y=-16.83296&z=5.25959&level=2&id=1698). The statistical integration allows the modelling of temporal series coral and macroalgae cover across geographies, and the environmental data are used as co-variates to explain the variability in the observed changes.
+## *Environmental data in ReefCloud*
 
-Currently there are two environmental datasets available in ReefCloud through our GeoServer:
+ReefCloud offers access to environmental data layers used for statistical data integration in our [Public Dashboard](https://reefcloud.ai/dashboard/?x=143.64606&y=-16.83296&z=5.25959&level=2&id=1698). The statistical integration models the spatial and temporal series of coral and macroalgae cover across geographies. This allows the creation of summaries on the status and trends of coral reefs at management scales from individual monitoring observations. The figure below shows the outputs from the statistical integration of monitoring data from various institutions across more than 400 sites monitored between 2004 and 2022 (click on the figure to visualise the data in the ReefCloud dashboard).
 
-+----------------------+----------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------+-----------------+
-| Environmental driver | Metric                                                                                                         | Frequency                                                                                      | Reference       |
-+======================+================================================================================================================+================================================================================================+=================+
-| Tropical Cyclones    | Exposure to damaging waves is represented as the cumulative time (hrs) under destructive waves (\> 4m height), | Yearly.                                                                                        | [@puotinen2016] |
-|                      |                                                                                                                |                                                                                                |                 |
-|                      |                                                                                                                | Data is integrated across cyclones in a single year. Maximum values are represented.           |                 |
-+----------------------+----------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------+-----------------+
-| Thermal Stress       | Degree Heating Week (DHW)                                                                                      | Yearly.                                                                                        |                 |
-|                      |                                                                                                                |                                                                                                |                 |
-|                      |                                                                                                                | Data is integrated across months in a year and represented as the maximum DHW values per year. |                 |
-+----------------------+----------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------+-----------------+
-|                      |                                                                                                                |                                                                                                |                 |
-+----------------------+----------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------+-----------------+
+[![Temporal trends of coral cover in the Central Southern Great Barrier Reef](fig/CS_GBR_temporalTrend.PNG){width="543"}](https://reefcloud.ai/dashboard/?x=146.50275&y=-19.75717&z=6.01795&level=3&id=1715)
 
-: Available environmental datasets
+Environmental data from major disturbances are used as co-variates to explain the variability in the observed changes in coral and macroalgae cover. Currently, there are two environmental datasets available in ReefCloud through our GeoServer:
 
-## Connect to Server
++------------------------+------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------+-----------------+
+| *Environmental driver* | *Metric*                                                                                                         | *Frequency*                                                                                      | *Source*                                                                         | *Reference*     |
++:======================:+:================================================================================================================:+:================================================================================================:+:================================================================================:+:===============:+
+| *Tropical Cyclones*    | *Exposure to damaging waves is represented as the cumulative time (hrs) under destructive waves (\> 4m height),* | *Yearly.*                                                                                        | *Wave hydrodynamic modelling from Windfield data generated from cyclone tracks.* | [@puotinen2016] |
+|                        |                                                                                                                  |                                                                                                  |                                                                                  |                 |
+|                        |                                                                                                                  | *Data is integrated across cyclones in a single year. Maximum values are represented.*           | *AIMS*                                                                           |                 |
++------------------------+------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------+-----------------+
+| *Thermal Stress*       | *Degree Heating Week (DHW)*                                                                                      | *Yearly.*                                                                                        | *Satellite-derived Sea Surface Temperature.*                                     | [@NOAA-CRW2013] |
+|                        |                                                                                                                  |                                                                                                  |                                                                                  |                 |
+|                        |                                                                                                                  | *Data is integrated across months in a year and represented as the maximum DHW values per year.* | [*NOAA Coral Reef Watch*](https://coralreefwatch.noaa.gov/)                      |                 |
++------------------------+------------------------------------------------------------------------------------------------------------------+--------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------+-----------------+
+
+: Including environmental co-variates in statistical analyses of coral cover trends can help explain the observed patterns (see figure below, hyperlinked to the ReefCloud Dashboard). While these analyses are automatically generated and available in ReefCloud from the integration of all publically available coral reef data in the platform, individual users might be interested on environmental data layers for their own analyses. So, we have made these datasets accessible through our GIS database (GeoServer). The sections below describe how to access these data in R.
+
+[![Temporal hard coral cover and environmental disturbances](fig/TemporalCover_Disturbance.PNG){fig-align="center"}](https://reefcloud.ai/dashboard/?x=145.64945&y=-14.62960&z=14.00000&level=6&id=1539)
+
+::: callout-warning
+*The GeoServer allows free access to environmental data in ReefCloud, but it is a small server designed for small access queries and low traffic. This means that access requests for large areas (e.g., large EEZs or Regions) will likely time out, rendering the system unresponsive.*
+
+*If you would like access to environmental data from all your monitoring sites across large geographic areas, please get in touch with us at support\@reefcloud.ai.*
+:::
+
+::: callout-note
+The datasets mentioned above are only available for those countries or territories with public monitoring data in ReefCloud. If you are interested in a region where data is not available, please get in touch with us at support\@reefcloud.ai
+:::
+
+## Dataset description
+
+### Thermal Stress
+
+::: panel-tabset
+#### Introduction
+
+First observed in the early 1980s, mass coral bleaching has become one of the most visible and damaging marine ecological impacts of climate change. When the water temperature is above the average maximum summer temperature for extended periods, corals can become thermally stressed, leading to coral bleaching and, eventually, loss of coral. Bleaching is the process by which corals lose the symbiotic algae (zooxanthellae), giving them their distinctive colours and main energy sources. If a coral is severely bleached, disease and death become likely. Over the past decade, severe coral bleaching has become more extensive, frequent, and intense.
+
+The Degree Heating Week (DHW) shows how much heat stress has accumulated in an area over the past 12 weeks (3 months). DHW is a widely used indicator and predictor of coral bleaching and can be estimated from long-term temperature logging and remotely sensed Sea Surface Temperature (SST) data. The units for DHW are "degree C-weeks", combining the intensity and duration of heat stress into one single number. Based on research at NOAA Coral Reef Watch, when the heat stress reaches four-degree C-weeks, you can expect to see significant coral bleaching, especially in more sensitive species. When heat stress reaches eight C-weeks or higher, widespread bleaching and significant mortality are expected
+
+The DHW indicator is calculated by accumulating temperature readings that are more than one degree Celsius over the historical maximum monthly mean temperature for a given location. Thus, if the temperature is 2 °C above the summer maximum for 4 weeks, the corresponding DHW indicator is (2 °C x 4 weeks) 8 DHW. Over time, the thermal stress accumulates over a 12-week sliding window.
+
+#### Data source
+
+ReefCloud uses [NOAA's Coral Reef Watch](https://coralreefwatch.noaa.gov/) products to provide insights on thermal stress exposure for monitored sides. NOAA's Coral Reef Watch products are widely used and are the longest-running DHW products. For ReefCloud, we use NOAA's Annual Maximum Degree Heating Week (DHW) indicator: For each year during 1985-2021, and at each location, NOAA provides the highest level of accumulated heat stress exposure, measured by Coral Reef Watch's daily global 5km satellite coral bleaching DHW product. Values are derived using the Version 3.1 daily global 5km CoralTemp satellite sea surface temperature (SST) data product.
+
+#### Frequency of updates
+
+Thermal stress insights on ReefCloud are updated annually as the data becomes available on NOAA Coral Reef Watch.
+
+#### Limitations
+
+Coral bleaching and subsequent mortality related to DHW will depend on several factors, some of which are related to methodological approaches and additional external factors, as well as the inherent ecological properties of the reef at a given location. While ReefCloud provides a conservative estimation of the exposure of reef systems to thermal anomalies, the observed response to such stress may vary across locations.
+
+The NOAA coral reef watch is the most widely used and longest-operating DHW product. The NOAA Coral Reef Watch program estimates the DHW from Sea Surface Temperature (SST) satellite readings at night. While a significant advantage is the validated methodology and global coverage of NOAA's products, a key challenge with measuring water temperatures from satellites is that clouds obscure the satellite's view, potentially resulting in large holes in the daily data. During cloudy summer wet seasons, this can result in extended periods, up to several weeks, where there are no new temperature readings, resulting in problems in the estimates of the corresponding DHW product. Hydrodynamic models paired with remotely sensed temperature can estimate temperature even during cloudy conditions. It also provides estimates of DHW at multiple depths, which is not possible with remotely sensed DHW products.
+
+The bleaching response to thermal stress and subsequent mortality will also depend on the historical exposure to thermal stress in a location, additional environmental factors (e.g., Light irradiance), and the taxonomic composition of the reef in terms of the physiological susceptibility to different thermal stress thresholds. Furthermore, as reef systems get more exposed to thermal stress, research suggests that natural acclimation or adaptation of reef communities could alter the bleaching response predictions to future temperature anomalies.
+
+#### Further reading
+
+[@hoegh-guldberg1999; @donner2009a; @heron2016; @guest2012; @kayanne2016; @hughes2018]
+:::
+
+### Tropical Cyclones
+
+::: panel-tabset
+#### Introduction
+
+A tropical cyclone is a rapidly rotating storm system with low atmospheric pressure at its calm centre (eye), inward spiralling rainbands, and strong winds forming in sufficiently warm sea surface temperatures in the world's tropical regions. In the southern hemisphere, these tropical storms are called cyclones and rotate in a clockwise direction. In contrast, in the northern hemisphere, cyclones are called hurricanes (western hemisphere) or typhoons (eastern hemisphere) and rotate in an anti-clockwise direction. If sufficiently long-lasting, the extreme winds generated by these storms can build powerful waves, severely damaging coral reefs and shorelines. By modelling where extreme waves could form during a cyclone, it is possible to predict a cyclone 'damage zone' beyond which major damage to reefs will not occur.  This zone is defined as the area within which the average height of the top one-third of the waves likely meets or exceeds 4 metres (Hs -- significant wave height).  We call this the 4MW (Hs \>= 4m) zone.  Field data from 8 past cyclones in the GBR and Western Australia has shown such zones perform well at capturing severe damage -- noting that because reef vulnerability is highly variable at \<1km scales, some parts of reefs within the damage zone will not be damaged.  Mapping the 4MW cyclone damage zone helps reef managers to:
+
+1.  Spatially target management responses after major tropical cyclones to promote recovery at severely damaged sites.
+
+2.  Identify spatial patterns in historical tropical cyclone exposure to explain habitat condition trajectories.
+
+#### Data source
+
+ReefCloud aims to source the most accurate cyclone data for the impacted region. We collate data from various databases to provide the best insights possible. For cyclones within the Australian area of responsibility, we source data provided by the [Australian Bureau of Meteorology's cyclone database](http://www.bom.gov.au), while for the Pacific region, key cyclone data is sourced from the I[nternational Best Track Archive for Climate Stewardship](https://www.ncdc.noaa.gov/ibtracs/). 
+
+#### Methods
+
+Tropical cyclones are remarkably predictable and well-organised storm systems, making it possible to reconstruct the spatial distribution of winds and waves around the eye to build predicted wind and wave 'fields' from a short list of input data that is freely available in meteorological databases (location of eye, central and ambient air pressure, size of eye, size of cyclone and cyclone forward speed and direction).  The 4MW damage zone model [@puotinen2016] first uses this base data to reconstruct the spatial distribution of wind speeds around the cyclone eye every hour along its track.  It then searches in each location across the study area for the locations where wind speeds were sufficiently high and long-lasting to build significant wave heights \>= 4m, then counts the number of hours for which such conditions persisted.  The resultant 4MW cyclone damage zone predicts the locations where sufficient wave energy could cause major damage to coral reefs.  Whether or not that damage occurred for a given part of a reef in the damage zone depends on further factors that can be explored in additional work, such as how reefs and islands block the incoming waves and the structural vulnerability of the corals to wave damage.   
+
+The 4MW zones provide a useful first step to reconstructing past histories of the relative impact of cyclones versus other disturbances on coral reefs (e.g., [@death2012; @maynard2015; @darling2019; @mellin2019; @vercelloni2020]). 
+
+Combining the 4MW damage zones with local-scale fetch models and numerical wave models run at a coarser scale allows a more precise estimate of relative wave exposure (e.g., [@ceccarelli2019; @castro-sanguino2021; @price2021; @gilmour2019; @gilmour2022]). 
+
+#### Frequency of updates
+
+Tropical cyclones information is periodically updated once data becomes available on the key cyclone databases being used (BOM, IBTRACS).
+
+#### Limitations
+
+As noted above, much work remains to be done to resolve damage patchiness within the 4MW damage zone (e.g., \[\@castro-sanguino2021\]). Where sufficient high-resolution bathymetry data exists with access to high-performance computing, numerical wave models can be run that better resolve local scale wave transformation (such as [@puotinen2020; @callaghan2020]). Any cyclone wind or wave model is highly sensitive to the quality of the input data recorded in meteorological databases.  These datasets contain missing values and errors.  For ReefCloud, screening methods to correct some of these were implemented (for example, when the size of the eye is recorded to be larger than the size of the overall cyclone -- which is impossible).  However, more work remains to be done on this.  Finally, the nature of cyclones and where they track is likely to change as the climate warms, though this remains highly uncertain for most key characteristics of cyclones (see [@knutson2019]).  Future work will use predicted cyclone tracks from global climate models to examine how wave damage risk to reefs will change. 
+:::
+
+# Access the data
+
+## *Connect to the GeoServer*
+
+The code below allows you to create a connection to the server and explore the available data layers.
 
 ```{r setup, include=T}
-knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
-
 library(sf) # simple features packages for handling vector GIS data
 library(httr) # generic webservice package
 library(tidyverse) # a suite of packages for data wrangling, transformation, plotting, ...
 library(ows4R) # interface for OGC webservices
 library(rnaturalearth) #World Map data from Natural Earth
 library(leaflet)
+library(leafem)
 
 #URL for the ReefCloud GeoServer
 rc_geo<-"https://geoserver.apps.aims.gov.au/reefcloud/ows"
+# Establish a connection
 rc_client <- WFSClient$new(rc_geo, 
                            serviceVersion = "1.0.0")
 #List of features
@@ -49,28 +144,65 @@ rc_client$getFeatureTypes(pretty = TRUE)
 
 ```
 
-Another to access this information is
+*Another to access this information is*
 
 ```{r}
+
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
-rc_client$getFeatureTypes() %>%
+rc_lyrs<-rc_client$getFeatureTypes() %>%
   map_chr(function(x){x$getName()})
 
 ```
 
-# Get data
+## Request data for your monitoring region
+
+Let's assume I have two monitoring sites (i.e., locations) in Palau, and I want to extract the exposure to cyclones over the years for these sites. The code below allows you to generate your sites and create a bounding box to delineate the spatial extent of your monitoring and query the GeoServer.
+
+I created a fake list of sites as a spatial data frame and then generated a polygon around those sites (bounding box) to query the GeoServer. Alternatively, you can use http://bboxfinder.com/ as an easy way to produce these coordinates.
 
 ```{r}
-knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 
 url <- parse_url(rc_geo)
+
+#Generate sites 
+sites<- data.frame(x=c(134.35, 134.43), y=c(7.42,7.28))%>%
+  as.matrix() %>%
+  st_multipoint() %>% 
+  st_sfc(crs=4326) %>% 
+  st_cast('POINT') %>%
+  st_sf(name=c("Site1", "Site2"))
+
 # create a bounding box for a spatial query.
-#I used http://bboxfinder.com/ as an easy way to produce the coordinates 
-my.bbox<-"134.217224,7.119971,134.612732,7.373362"
+my.bbox<-st_bbox(st_buffer(sites,dist = 0.1))
+
+leaflet()%>%addExtent(data=my.bbox,
+                        color = "red", 
+                          stroke=T,
+                      weight = 1, 
+                      smoothFactor = 0.5,
+                      opacity = 1.0, 
+                      fillOpacity = 0.5,
+                      fillColor = NULL,
+                      highlightOptions = highlightOptions(color = "white", weight = 2,bringToFront = TRUE))%>%
+  addMarkers(data=sites, label = ~name)%>%
+  addProviderTiles(providers$Esri.WorldImagery)
+
+
+```
+
+Using this bounding box, we can query the server to extract the Tropical Cyclone data within this region. The table below is a simple feature data frame (spatial object) containing all the data stored in the GeoServer for Tropical Cyclone exposure within the bounding box.
+
+```{r}
+#convert bounding box into string for the query
+my.bbox<- my.bbox %>%
+  as.character()%>%
+  paste(.,collapse = ',')
+
+#set up your query
 url$query <- list(service = "WFS",
-                  version = "1.0.0", # optional
+                  version = "1.0.0",
                   request = "GetFeature",
-                  typename = "reefcloud:storm4m_exposure_year_tier",
+                  typename = rc_lyrs[6], # I am selecting this layer:"reefcloud:storm4m_exposure_year_tier",
                   bbox = my.bbox,
                   width=768,
                   height=330,
@@ -79,13 +211,22 @@ url$query <- list(service = "WFS",
                   format="application/openlayers")
 request <- build_url(url)
 
-koror<- read_sf(request)
+#request the data and set up coordinate reference
+palau<- read_sf(request)%>%st_set_crs(4326)
 
+knitr::kable(palau %>% head())
+
+
+```
+
+Let's visualise the results for the year 2014 when TC Haupit impacted Palau. Note this only shows the area of interest based on the bounding box around the monitoring sites.
+
+```{r}
 #Plot results
 
-df<-koror%>%dplyr::filter(start_year==2014)
+df<-palau%>%dplyr::filter(start_year==2014)
 pal <- colorNumeric(
-  palette = "YlGnBu",
+  palette = "YlOrRd",
   domain = df$max_hrs
 )
 
@@ -97,50 +238,38 @@ leaflet(df)%>%addPolygons(color = "#444444",
                       fillOpacity = 0.5,
                       fillColor = ~pal(df$max_hrs),
                       highlightOptions = highlightOptions(color = "white", weight = 2,bringToFront = TRUE))%>%
-  addTiles()%>%
   addLegend("bottomright", pal = pal, values = ~df$max_hrs,
-    title = "Exposure to\n damaging waves (hrs)",
-    labFormat = labelFormat(prefix = "$"),
+    title = "Exposure to </br> damaging waves </br> (hrs)",
+    labFormat = labelFormat(),
     opacity = 1
-  )
+  )%>%
+  addMarkers(data=sites, label = ~name)%>%
+  addProviderTiles(providers$Esri.WorldImagery)
 ```
 
-# Spatial query from monitoring sites
+## *Extract data for monitoring sites*
+
+The steps below allowed us to download the cyclone data within the bounding box. Now the data are loaded in the memory, we want to extract the specific cyclone exposure values for each site over the years.
 
 ```{r}
-sites<- data.frame(x=c(134.35, 134.43), y=c(7.42,7.28))%>%
-  as.matrix() %>%
-  st_multipoint() %>% 
-  st_sfc(crs=4326) %>% 
-  st_cast('POINT') %>%
-  st_sf(name=c("Site1", "Site2"))
-
-my.bbox<-st_bbox(sites)%>%
-  as.character()%>%
-  paste(.,collapse = ',')
-
-url$query <- list(service = "WFS",
-                  version = "1.0.0", # optional
-                  request = "GetFeature",
-                  typename = "reefcloud:storm4m_exposure_year_tier",
-                  bbox = my.bbox,
-                  width=768,
-                  height=330,
-                  srs="EPSG%3A4326",
-                  styles='',
-                  format="application/openlayers")
-request <- build_url(url)
-
-koror<- read_sf(request)%>%
-  st_set_crs(4326)
-
-data = st_intersection(sites, koror)%>%st_drop_geometry()%>%
+data = st_intersection(sites, palau)%>%st_drop_geometry()%>%
   dplyr::select(name, start_year, max_hrs,min_hrs,start_date, end_date, storm_count,severity)%>%
   group_by(name, start_year)%>%
-  summarise(max_hrs=mean(max_hrs), min_hrs=mean(min_hrs))%>%
+  unique()%>%
+  # summarise(max_hrs=max(max_hrs), min_hrs=max(min_hrs))%>%
   arrange(name,start_year)
   
 knitr::kable(data,format="html",
-             caption="Table 1. Estimated cyclone impact on monitring sites")
+             caption="Table 1. Estimated cyclone impact on monitoring sites")
 
 ```
+
+Now, you are ready to start your analyses. Enjoy!
+
+## Additional notes for the data analysis
+
+-   Thermal Stress and Tropical Cyclones are discrete events. This means they happen during a relatively short period in a year. Similarly, monitoring observations are discrete, and they accumulate over the years. When analysing monitoring data and the correlation of response variables (e.g., coral cover) to the incidence of disturbances (e.g., cyclones), please note the disturbances' start and end dates to appropriately assess a disturbance to an observation. For example, if you are monitoring a reef just before a cyclone happened but modelled coral cover over time using discrete years, assigning the cyclone exposure to that monitoring year will not capture the impact of the disturbance on the response variable.
+
+-   It may be helpful to consider that many large-scale and intense disturbances tend to have a lag effect on coral reef benthos over the years ([@castro-sanguino2021][@cheal2017]).
+
+-   Please review the limitations section for each of the datasets. Note that the spatial resolution of these variables is limited compared to monitoring data. Therefore, caution should be exercised when interpreting the results of correlative statistics.
