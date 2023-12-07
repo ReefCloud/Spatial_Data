@@ -3,11 +3,30 @@ title: "Cyclone_query"
 author: "Manuel Gonzalez-Rivero"
 format: html
 editor: visual
+bibliography: references.bib
 ---
 
 ## Extracting environmental co-variates from ReefCloud's GeoServer
 
-Intro
+ReefCloud offers access to environmental data layers used for the statistical integration of data in our [Public Dashboard](https://reefcloud.ai/dashboard/?x=143.64606&y=-16.83296&z=5.25959&level=2&id=1698). The statistical integration allows the modelling of temporal series coral and macroalgae cover across geographies, and the environmental data are used as co-variates to explain the variability in the observed changes.
+
+Currently there are two environmental datasets available in ReefCloud through our GeoServer:
+
++----------------------+----------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------+-----------------+
+| Environmental driver | Metric                                                                                                         | Frequency                                                                                      | Reference       |
++======================+================================================================================================================+================================================================================================+=================+
+| Tropical Cyclones    | Exposure to damaging waves is represented as the cumulative time (hrs) under destructive waves (\> 4m height), | Yearly.                                                                                        | [@puotinen2016] |
+|                      |                                                                                                                |                                                                                                |                 |
+|                      |                                                                                                                | Data is integrated across cyclones in a single year. Maximum values are represented.           |                 |
++----------------------+----------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------+-----------------+
+| Thermal Stress       | Degree Heating Week (DHW)                                                                                      | Yearly.                                                                                        |                 |
+|                      |                                                                                                                |                                                                                                |                 |
+|                      |                                                                                                                | Data is integrated across months in a year and represented as the maximum DHW values per year. |                 |
++----------------------+----------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------+-----------------+
+|                      |                                                                                                                |                                                                                                |                 |
++----------------------+----------------------------------------------------------------------------------------------------------------+------------------------------------------------------------------------------------------------+-----------------+
+
+: Available environmental datasets
 
 ## Connect to Server
 
