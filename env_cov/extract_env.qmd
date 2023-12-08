@@ -24,6 +24,7 @@ format:
     code-block-bg: true
     code-block-border-left: "#31BAE9"
     highlight-style: github
+    include: true
 editor: visual
 execute:
   warning: false
