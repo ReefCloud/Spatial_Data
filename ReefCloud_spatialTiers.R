@@ -6,10 +6,10 @@
 rm(list=ls())
 
 
-d.folder<-"D:\\GIS_Datasets/"
+d.folder<-"C://Users/mgonzale/OneDrive - Australian Institute of Marine Science/GIS_Datasets/"
 
 
-makeTiers<-function(territoryName){
+makeTiers<-function(territoryName, d.folder="C://Users/mgonzale/OneDrive - Australian Institute of Marine Science/GIS_Datasets/"){
   require(tidyverse)
   require(osmdata)
   require(sf)
@@ -182,8 +182,7 @@ makeTiers<-function(territoryName){
   t24=tier2%>%
     mutate(source_id=tier_id)%>%
     bind_rows(tier3, tier4)%>%
-    st_cast(to = "MULTIPOLYGON")%>%
-    st_wrap_x()
+    st_cast(to = "MULTIPOLYGON")
   
   #Write File
   st_write(t24, file.path(d.folder,sprintf("ReefCloud_regions/tiers_databse/%s_tier2_4.geojson", countryISO)), 
@@ -193,7 +192,7 @@ makeTiers<-function(territoryName){
 
 ## RUN ###
 
-for (territoryName in c( "Cuba", "Bahamas", "Egypt", "Saudi Arabia", "Yemen", "Sundan", "India")){
+for (territoryName in c( "Taiwan")){
   tryCatch(makeTiers(territoryName = territoryName))
   gc()
 }
