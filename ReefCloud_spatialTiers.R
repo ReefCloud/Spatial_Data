@@ -73,10 +73,10 @@ makeTiers<-function(territoryName, d.folder="C://Users/mgonzale/OneDrive - Austr
   }
   
   #Validate tier
-  valid=st_is_valid(tier2)
-  tier2=tier2 %>%st_set_precision(1000000) %>% st_make_valid()
-  tier2=st_buffer(tier2[!is.na(valid),], 0.0)
-  # dir.create("ReefCloud_regions/eez/", showWarnings = F)
+  # valid=st_is_valid(tier2)
+  # tier2=tier2 %>%st_set_precision(1000000) %>% st_make_valid()
+  # tier2=st_buffer(tier2[!is.na(valid),], 0.0)
+  # # dir.create("ReefCloud_regions/eez/", showWarnings = F)
   dir.create(file.path(d.folder,"ReefCloud_regions/tier2"))
   st_write(tier2, file.path(d.folder,sprintf("ReefCloud_regions/tier2/%s_tier2.geojson", territoryName)),
            delete_dsn=T,quiet = T,append = F)
