@@ -190,9 +190,3 @@ makeTiers<-function(territoryName, d.folder="C://Users/mgonzale/OneDrive - Austr
   
 }
 
-## RUN ###
-
-for (territoryName in c( "Taiwan")){
-  tryCatch(makeTiers(territoryName = territoryName))
-  gc()
-}
