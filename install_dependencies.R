@@ -22,7 +22,7 @@ install_if_missing <- function(packages) {
     if (!require(pkg, character.only = TRUE)) {
       install.packages(pkg, dependencies = TRUE)
       library(pkg, character.only = TRUE)
-      if (pkg %in% c("h3js","h3", "rgdal" )){
+      if (pkg %in% c("h3js", "h3", "rgdal" )){
         devtools::install_github("saurfang/h3js")
         remotes::install_github("crazycapivara/h3-r") 
       }
