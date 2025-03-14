@@ -1,4 +1,45 @@
-AdminBoundaries<-function(SHP,admin_level=4){
+
+# Get the administrative boundaries of a country
+
+# Expand Boundaries
+# This function is used to extend the administrative boundaries of a country into the maritime areas (12 nm) to include the Exclusive Economic Zone (EEZ).
+st_no_overlap <- function(polygons) {
+  # credit to https://github.com/r-spatial/sf/issues/824
+  require(sf)
+  require(tidyverse)
+  
+  centroids <- st_centroid(polygons)
+  
+  # Voronoi tesselation
+  voronoi <-
+    centroids %>%
+    st_geometry() %>%
+    st_union() %>%
+    st_voronoi() %>%
+    st_collection_extract()
+  
+  # Put them back in their original order
+  voronoi <- voronoi[unlist(st_intersects(centroids, voronoi))]
+  
+  # Keep the attributes
+  result <- centroids
+  
+  # Intersect voronoi zones with polygons
+  st_geometry(result) <-
+    mapply(function(x, y) st_intersection(x, y),
+           st_geometry(polygons),
+           voronoi,
+           SIMPLIFY = FALSE) %>%
+    st_sfc(crs = st_crs(polygons))
+  
+  result
+}
+
+
+
+
+
+AdminBoundaries<-function(SHP,admin_level=4, expand.boundary=FALSE){
   
   #install the osmdata, sf, tidyverse and ggmap package
   if(!require("osmdata")) install.packages("osmdata")
@@ -97,7 +138,19 @@ AdminBoundaries<-function(SHP,admin_level=4){
     
   }
   
+  # Expand the Administrative boundaries into the 12nm maritime zone. This is a prototype function and may not work for all countries.
+  if (isTRUE(expand.boundary)){
+    require(rnaturalearth)
+    land<-ne_countries(country="Taiwan", scale = "large") %>% st_as_sf()
+    tier4<-st_as_sf(admin.b) %>% st_make_valid()
+    t4.ext<-tier4 %>% 
+      st_transform(3857) %>%
+      st_buffer(units::set_units(12*1.852, "km")) %>%
+      st_transform(4326) |> 
+      st_difference(land)
+
+    admin.b<-st_no_overlap(t4.ext %>% st_transform(3857)) |> 
+    st_transform(4326) 
+  }
   return(admin.b)
-  
-  
 }

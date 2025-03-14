@@ -1,7 +1,6 @@
 ## RUN ###
 
-source("ReefCloud_spatialTiers.R")
-for (territoryName in c( "Vietnam")){
-  tryCatch(makeTiers(territoryName = territoryName))
+for (territoryName in c( "Taiwan", "New Caledonia", "East Timor")){
+  tryCatch(eval("ReefCloud_spatialTiers.R",territoryName, TRUE))
   gc()
 }

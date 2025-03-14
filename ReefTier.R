@@ -12,7 +12,6 @@
 # - h3
 # - sf
 # - tidyverse
-# - h3js
 # - progress
 #
 # Usage:
@@ -52,7 +51,6 @@ ReefTier <- function(tier2, d.folder = "D:\\GIS_Datasets/") {
   library(h3)
   library(sf)
   library(tidyverse)
-  library(h3js)
   library(progress)
   
   url_base <- "https://allencoralatlas.org/geoserver/ows?service=wms&version=2.0.0&request=GetMap&layers=coral-atlas:geomorphic_data_verbose&crs=EPSG:4326&styles=polygon&bbox=%s,%s,%s,%s&width=2048&height=2048&format=geojson"
