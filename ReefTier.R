@@ -149,9 +149,11 @@ ReefTier <- function(tier2, d.folder = "D:\\GIS_Datasets/") {
     mcr.merged <- mcr %>%
       st_transform(3857) %>%
       st_buffer(dist = units::set_units(3, "m")) %>%
-      summarise(geometry = st_union(geometry)) %>%
+      st_union %>%
+      # summarise(geometry = st_union(geometry)) %>%
       st_cast("POLYGON") %>%
-      st_transform(4326)
+      st_transform(4326) %>%
+      st_as_sf()
     
     # Process merged polygon to generate H3 grid where there are coral reefs
     h3.mcr <- data.frame(reef_id = character(), reef_area = units::set_units(numeric(), "m^2"), source = character())
@@ -176,8 +178,8 @@ ReefTier <- function(tier2, d.folder = "D:\\GIS_Datasets/") {
       # Check for any missing reefs. Missing reefs are those that do not fit into the H3 hexagon at res 7
       for (x in this.id$reef_id) {
         r.check <- data.frame(reef_id = k_ring(x, 1)) %>%
-          filter(!(reef_id %in% this.id$reef_id)) %>%
-          rowwise() %>%
+          dplyr::filter(!(reef_id %in% this.id$reef_id)) %>%
+          group_by(reef_id) %>%
           mutate(reef_area = get_reef_area(reef_id, mcr.merged[i, ]), source = "MCRMP_Reef500poly") %>%
           ungroup() %>%
           filter(reef_area > units::set_units(0, "m^2"))
