@@ -72,7 +72,7 @@ AdminBoundaries<-function(SHP,admin_level=4, expand.boundary=FALSE){
   # any(intrscts[,1] & intrscts[,2])
   # intrscts <- which(intrscts[,1] & intrscts[,2])
   
-  if (dim(intrscts)[1]>0){
+  if (dim(intrscts)[1]>1){
     crds <- st_coordinates(SHP) # get coordinates
     crds.west <- subset(crds, crds[,1] <= 0)               # western half of the polygon
     crds.east<- subset(crds, crds[,1] >= 0)
