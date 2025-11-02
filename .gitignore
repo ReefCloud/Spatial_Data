@@ -5,6 +5,8 @@
 # Session Data files
 .RData
 .RDataTmp
+GIS/*
+!GIS/.gitkeep
 
 # User-specific files
 .Ruserdata

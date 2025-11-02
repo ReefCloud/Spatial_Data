@@ -30,13 +30,14 @@ if (length(args) == 0) {
 territoryName <- args[1]
 exp.b <- as.logical(args[2])
 
-makeTiers <- function(territoryName, exp.b = FALSE, d.folder = "C://Users/mgonzale/OneDrive - Australian Institute of Marine Science/GIS_Datasets/") {
+makeTiers <- function(territoryName, exp.b = FALSE, d.folder = "GIS") {
   
   suppressPackageStartupMessages({
-  library(tidyverse)
-  library(sf)
-  library(mregions)
-  library(progress)
+  require(tidyverse)
+  require(sf)
+  require(mregions2)
+  require(progress)
+  require(nngeo)
   })
   
   # Source custom functions
@@ -64,7 +65,7 @@ makeTiers <- function(territoryName, exp.b = FALSE, d.folder = "C://Users/mgonza
       dplyr::select(name, class, tier, source_id, source, ISO, territory, sovereign, geometry)
   ))
   
-  dir.create(file.path(d.folder, "ReefCloud_regions/eez/"), showWarnings = FALSE)
+  dir.create(file.path(d.folder, "ReefCloud_regions/eez/"), showWarnings = FALSE,recursive = TRUE)
   st_write(country, file.path(d.folder, sprintf("ReefCloud_regions/eez/%s_eez.geojson", territoryName)),
            delete_dsn = TRUE, quiet = TRUE, append = FALSE)
   
@@ -154,11 +155,8 @@ makeTiers <- function(territoryName, exp.b = FALSE, d.folder = "C://Users/mgonza
     
     # Admin level: Often admin_level=4 works for small nations. Change this for large countries (e.g., countries) to admin level=1 or 2 as appropriate
     tier4 <- AdminBoundaries(tier2, admin_level = admin_level, expand.boundary = exp.b)
-    # valid <- st_is_valid(tier4)
-    # tier4 <- tier4 %>% st_set_precision(1000000) %>% st_make_valid()
-    # tier4 <- st_buffer(tier4[!is.na(valid), ], 0.0)
-    # tier4 <- st_difference(tier4)
-    tier4<- tier4  |> st_make_valid()
+    tier4<- tier4  |> st_remove_holes() |> #use nngeo to remove holes inside from land union
+      st_make_valid()
     
     sf_use_s2(FALSE)
     
