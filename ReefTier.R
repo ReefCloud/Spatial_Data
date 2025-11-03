@@ -101,7 +101,7 @@ ReefTier <- function(tier2, d.folder = "GIS") {
     # Check for any missing reefs. Missing reefs are those that do not fit into the H3 hexagon at res 7
     for (x in this.id$reef_id) {
       r.check <- tibble(reef_id = k_ring(x, 1)) |> 
-        filter(!(reef_id %in% this.id$reef_id)) 
+        filter(!(reef_id %in% x)) 
       if(dim(r.check)[1]>0){
         r.check<-r.check |> 
         group_by(reef_id) |> 
