@@ -52,7 +52,7 @@ ReefTier <- function(tier2, d.folder = "GIS") {
   library(sf)
   library(tidyverse)
   library(progress)
-
+  
   # Initialize progress bar
   pb <- progress_bar$new(
     format = "  Getting reef hexagons [:bar] :percent in :elapsed",
@@ -60,16 +60,15 @@ ReefTier <- function(tier2, d.folder = "GIS") {
   )
   pb$tick(0)
   
-  # Fetch data from local files using the WCMC files
+  # Load data from local files using the WCMC files
   reefs<-read_sf(
     file.path(d.folder,
-              "Reefs/WCMC008_CoralReefs2018_v4_1/14_001_WCMC008_CoralReefs2018_v4_1/01_Data/WCMC008_CoralReef2018_Py_v4_1.shp")) 
-  
-  reefs <- reefs[st_within(reefs, tier2, sparse = FALSE), ]
+              "Reefs/reefsWCMC.geojson")) 
+  reefs<-reefs[st_filter(tier2, reefs,.predicate = st_contains), ]
   
   pb$tick()
   
-
+  
   # Merge polygons nearby
   # reef.merged <- reefs %>%
   #   st_transform(3857) %>%
@@ -86,38 +85,52 @@ ReefTier <- function(tier2, d.folder = "GIS") {
     total = dim(reefs)[1], clear = FALSE, width = 60
   )
   
+  
+  
   for (i in seq(1:dim(reefs)[1])) {
     pb$tick()
+    reef.h3<-reefs[i,] |> st_transform( crs = 3857) |> st_buffer(dist = 5000) |> st_transform(crs=4326)
+    
     if (st_area(reefs[i, ]) < units::set_units(5162000, "m^2")) {
       this.id <- data.frame(reef_id = geo_to_h3(st_centroid(reefs[i, ]), res = 7)) %>%
         mutate(reef_area = get_reef_area(reef_id, reefs[i, ]), source = "UNEP-WCMC, WorldFish Centre, WRI, TNC (2021)") %>%
         ungroup()
     } else {
-      this.id <- data.frame(reef_id = polyfill(reefs[i, ], res = 7)) %>%
+      this.id <- data.frame(reef_id = polyfill(reef.h3, res = 7)) %>%
         group_by(reef_id) %>%
         mutate(reef_area = get_reef_area(reef_id, reefs[i, ]), source = "UNEP-WCMC, WorldFish Centre, WRI, TNC (2021)") %>%
-        ungroup()
+        ungroup() |> 
+        filter(reef_area > units::set_units(0, "m^2"))   
     }
     # Check for any missing reefs. Missing reefs are those that do not fit into the H3 hexagon at res 7
+    id_list<-list()
+    a=0
     for (x in this.id$reef_id) {
       r.check <- tibble(reef_id = k_ring(x, 1)) |> 
         filter(!(reef_id %in% x)) 
       if(dim(r.check)[1]>0){
+        a=a+1
         r.check<-r.check |> 
-        group_by(reef_id) |> 
-        mutate(reef_area = get_reef_area(id = reef_id,reef= reefs[i, ]), source =  "UNEP-WCMC, WorldFish Centre, WRI, TNC (2021)") |> 
-        ungroup() |> 
-        filter(reef_area > units::set_units(0, "m^2"))
-      this.id <- bind_rows(this.id, r.check)
+          group_by(reef_id) |> 
+          mutate(reef_area = get_reef_area(id = reef_id,reef= reefs[i,]), source =  "UNEP-WCMC, WorldFish Centre, WRI, TNC (2021)") |> 
+          ungroup() |> 
+          filter(reef_area > units::set_units(0, "m^2"))      
+        id_list[[a]] <- r.check
       }
+      
     }
-    h3.reefs <- bind_rows(h3.reefs, this.id)
+    
+    h3.reefs <- bind_rows(h3.reefs, this.id, bind_rows(id_list))
+    
   }
-  
+  pb$terminate()
   gc()
   
+  h3.reefs<-h3.reefs |> select(reef_id) |> unique() |>  
+    group_by(reef_id)  |> 
+    mutate(reef_area=sum(get_reef_area(reef_id, reefs)),
+           source =  "UNEP-WCMC, WorldFish Centre, WRI, TNC (2021)") |> ungroup()
   
-
   # Generate tier 5 reef polygons
   tier5 <- h3_to_geo_boundary_sf(h3.reefs$reef_id) %>%
     rename(reef_id = h3_index) %>%
