@@ -140,8 +140,12 @@ AdminBoundaries<-function(SHP,admin_level=4, expand.boundary=FALSE){
   
   # Expand the Administrative boundaries into the 12nm maritime zone. This is a prototype function and may not work for all countries.
   if (isTRUE(expand.boundary)){
+
     require(rnaturalearth)
-    land<-ne_countries(country="Taiwan", scale = "large") %>% st_as_sf()
+    land<-ne_countries(country=tier2$name, scale = "large") |> 
+      st_as_sf() |> st_buffer(dist=-0.03)
+      
+      
     tier4<-st_as_sf(admin.b) %>% st_make_valid()
     t4.ext<-tier4 %>% 
       st_transform(3857) %>%

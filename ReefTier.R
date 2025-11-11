@@ -52,6 +52,7 @@ ReefTier <- function(tier2, d.folder = "GIS") {
   library(sf)
   library(tidyverse)
   library(progress)
+  source("ReefTier_ACA.R") ##function to add more H3 hexagons from reefs mapped by the Allen Coral Atlas (ACA)
   
   # Initialize progress bar
   pb <- progress_bar$new(
@@ -136,6 +137,11 @@ ReefTier <- function(tier2, d.folder = "GIS") {
     rename(reef_id = h3_index) %>%
     mutate(reef_id = as.factor(reef_id)) %>%
     merge(h3.reefs, by = "reef_id")
+  
+  
+  t5.aca<-ReefTier_filler(tier=tier2, tier5=tier5,d.folder = d.folder)
+  
+  tier5<-tier5 |> bind_rows(t5.aca)
   
   gc()
   return(tier5)

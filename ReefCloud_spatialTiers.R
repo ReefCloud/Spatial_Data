@@ -197,13 +197,25 @@ makeTiers <- function(territoryName, exp.b = FALSE, d.folder = "GIS") {
   if (!t5.exist) {
     tier5 <- tier5 %>%
       ungroup() %>%
+      distinct() |> 
       st_join(tier4 %>% dplyr::select(tier_id, ISO, territory, sovereign, geometry)) %>%
       tibble::rowid_to_column(., "ID") %>%
       mutate(tier_id = as.numeric(paste0(tier_id, ID))) %>%
       dplyr::select(-ID) %>%
       st_cast(to = "MULTIPOLYGON")
+
+    
+    # tier5 <- as.data.frame(tier5)
+    # tier5  <- rowid_to_column(tier5, var = "id") |> 
+    #   mutate(tier_id=ifelse(
+    #     is.na(tier_id), as.numeric(paste0(unique(tier2$tier_id), id)),
+    #     tier_id
+    #   ))
+    #   
+    # tier5 <- st_as_sf(tier5 , sf_column_name = "geometry")
     st_write(tier5, file.path(d.folder, sprintf("ReefCloud_regions/tiers_databse/%s_tier5.geojson", countryISO)),
              delete_dsn = TRUE, quiet = TRUE, append = FALSE)
+
   }
   
   pb$tick()
