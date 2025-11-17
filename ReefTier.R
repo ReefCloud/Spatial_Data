@@ -47,7 +47,7 @@ get_reef_area <- function(id, reef) {
 #   d.folder: Directory containing GIS datasets.
 # Returns:
 #   Spatial data of tier 5 reef polygons.
-ReefTier <- function(tier2, d.folder = "GIS") {
+ReefTier <- function(tier2, d.folder = "GIS", useACA = FALSE) {
   library(h3)
   library(sf)
   library(tidyverse)
@@ -69,6 +69,13 @@ ReefTier <- function(tier2, d.folder = "GIS") {
   
   pb$tick()
   
+  if (dim(reefs)[1]==0){
+    warning("No reefs found in the WCMC dataset for the provided region. Using ACA data only")
+    t5<-ReefTier_filler(tier=tier2, tier5=NULL,d.folder = d.folder)
+		if (dim(t5)[1]==0){
+			stop("No reefs found either in WCMC or ACA dataset for the provided region.")
+		}
+  } else {
   
   # Merge polygons nearby
   # reef.merged <- reefs %>%
@@ -138,10 +145,12 @@ ReefTier <- function(tier2, d.folder = "GIS") {
     mutate(reef_id = as.factor(reef_id)) %>%
     merge(h3.reefs, by = "reef_id")
   
-  
+  if (useACA){
+  # Add ACA reefs
   t5.aca<-ReefTier_filler(tier=tier2, tier5=tier5,d.folder = d.folder)
-  
   tier5<-tier5 |> bind_rows(t5.aca)
+  }
+  }
   
   gc()
   return(tier5)

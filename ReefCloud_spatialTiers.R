@@ -29,8 +29,9 @@ if (length(args) == 0) {
 }
 territoryName <- args[1]
 exp.b <- as.logical(args[2])
+useACA <- as.logical(args[3])
 
-makeTiers <- function(territoryName, exp.b = FALSE, d.folder = "GIS") {
+makeTiers <- function(territoryName, exp.b = FALSE, useACA=FALSE, d.folder = "GIS") {
   
   suppressPackageStartupMessages({
   require(tidyverse)
@@ -118,7 +119,7 @@ makeTiers <- function(territoryName, exp.b = FALSE, d.folder = "GIS") {
     ))
     t5.exist <- TRUE
   } else {
-    tier5 <- ReefTier(tier2, d.folder = d.folder)
+    tier5 <- ReefTier(tier2, d.folder = d.folder, useACA = useACA)
     t5.exist <- FALSE
   }
   
@@ -197,11 +198,12 @@ makeTiers <- function(territoryName, exp.b = FALSE, d.folder = "GIS") {
   if (!t5.exist) {
     tier5 <- tier5 %>%
       ungroup() %>%
-      distinct() |> 
+      unique() |> 
       st_join(tier4 %>% dplyr::select(tier_id, ISO, territory, sovereign, geometry)) %>%
       tibble::rowid_to_column(., "ID") %>%
       mutate(tier_id = as.numeric(paste0(tier_id, ID))) %>%
       dplyr::select(-ID) %>%
+      #filter(!is.null(tier_id)) |> 
       st_cast(to = "MULTIPOLYGON")
 
     

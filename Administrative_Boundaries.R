@@ -142,7 +142,7 @@ AdminBoundaries<-function(SHP,admin_level=4, expand.boundary=FALSE){
   if (isTRUE(expand.boundary)){
 
     require(rnaturalearth)
-    land<-ne_countries(country=tier2$name, scale = "large") |> 
+    land<-ne_countries(country=SHP$name, scale = "large") |> 
       st_as_sf() |> st_buffer(dist=-0.03)
       
       

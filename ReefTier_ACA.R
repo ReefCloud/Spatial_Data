@@ -82,7 +82,7 @@ ReefTier_filler <- function(tier, tier5, d.folder = "GIS") {
   
   pb$tick()
   
-  if (is.null(ACA)) return(NULL)
+  if (dim(ACA)[1] == 0) return(NULL)
   
   # Merge polygons nearby
   ACA.merged <- ACA
